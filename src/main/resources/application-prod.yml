@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${PROD_DB_URL}
+    username: ${PROD_DB_USERNAME}
+    password: ${PROD_DB_PASSWORD}
+
+#  redis:
+#    host: ${REDIS_HOST}
+#    port: 6379
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # prod에서는 create/update 절대 금지!
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.phraiz.back: ERROR

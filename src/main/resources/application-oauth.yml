@@ -1,0 +1,25 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: email
+            redirect-uri: "https://${HOST}/login/oauth2/code/google"
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client_secret: ${KAKAO_CLIENT_SECRET} # 없을 시 생략. client-authentication-method 도 같이 삭제
+            client-name: Kakao
+            redirect-uri: "https://${HOST}/login/oauth2/code/kakao"
+            authorization-grant-type: authorization_code
+            scope:
+              - account_email
+            client-authentication-method: client_secret_post
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
