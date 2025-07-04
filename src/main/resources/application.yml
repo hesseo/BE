@@ -35,7 +35,11 @@ spring:
           writetimeout: 5000
 
 jwt:
-  secret: ${JWT_SECRET_KEY}
-  access-token-validity: ${JWT_ACCESS_EXPIRE:3600000}
-  refresh-token-validity: ${JWT_REFRESH_EXPIRE:604800000}
+#  secret: ${JWT_SECRET_KEY}
+#  access-token-validity: ${JWT_ACCESS_EXPIRE:3600000}
+#  refresh-token-validity: ${JWT_REFRESH_EXPIRE:604800000}
+  secret-key: your-very-secret-jwt-key-here
+  access-expire: 3600000       # 1시간 (ms)
+  refresh-expire: 604800000    # 7일 (ms)
+
 mework.security: INFO
