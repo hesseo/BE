@@ -15,7 +15,7 @@ public class SignUpRequestDTO {
     public Member toEntity() {
         return Member.builder()
                 .id(this.id)
-                .pwd(this.pwd)  // TODO 비밀번호는 암호화 처리한 후 넣기
+                .pwd(this.pwd)
                 .email(this.email)
                 .loginType(this.loginType)
                 .planId(this.planId)

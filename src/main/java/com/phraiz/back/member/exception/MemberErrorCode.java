@@ -8,6 +8,7 @@ public enum MemberErrorCode implements ErrorCode {
     INVALID_EMAIL_FORMAT(400, "CLT002", "유효하지 않은 이메일 형식입니다.", "ACCOUNT"),
     EMAIL_NOT_REGISTERED(404, "CLT003", "등록되지 않은 이메일입니다.", "ACCOUNT"),
     UNABLE_TO_SEND_EMAIL(500, "SYS001", "이메일 전송에 실패했습니다.", "ACCOUNT"),
+    EMAIL_NOT_VERIFIED(403, "CLT999", "이메일 인증이 완료되지 않았습니다.", "ACCOUNT"),
 
     // 02. 아이디 관련
     USER_NOT_FOUND(404, "CLT004", "사용자를 찾을 수 없습니다.", "ACCOUNT"),

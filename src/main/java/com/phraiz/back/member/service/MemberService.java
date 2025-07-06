@@ -1,12 +1,18 @@
 package com.phraiz.back.member.service;
 
+import com.phraiz.back.common.exception.custom.BusinessLogicException;
+import com.phraiz.back.common.util.RedisUtil;
 import com.phraiz.back.member.domain.Member;
+import com.phraiz.back.member.dto.request.LoginRequestDTO;
 import com.phraiz.back.member.dto.request.SignUpRequestDTO;
 import com.phraiz.back.member.dto.response.SignUpResponseDTO;
+import com.phraiz.back.member.exception.MemberErrorCode;
 import com.phraiz.back.member.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class MemberService {
@@ -14,14 +20,18 @@ public class MemberService {
     MemberRepository memberRepository;
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+    @Autowired
+    private RedisUtil redisUtil;
 
+    /* 1. 회원가입 */
+    // 1-1. 회원가입
     public SignUpResponseDTO signUp(SignUpRequestDTO signUpRequestDTO) {
-        // 중복 검사
+        // 중복 검사 + 등록된 이메일인지 확인
         if (memberRepository.existsById(signUpRequestDTO.getId())) {
-            throw new IllegalArgumentException("이미 사용 중인 ID입니다.");
+            throw new BusinessLogicException(MemberErrorCode.USERID_EXISTS);
         }
         if (memberRepository.existsByEmail(signUpRequestDTO.getEmail())) {
-            throw new IllegalArgumentException("이미 등록된 이메일입니다.");
+            throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
         }
 
         // 비밀번호 암호화
@@ -34,6 +44,29 @@ public class MemberService {
                 .loginType(signUpRequestDTO.getLoginType())
                 .build();
         memberRepository.save(member);
+
+        // 회원가입 성공 후 Redis에서 인증 완료 상태 삭제
+        redisUtil.deleteData("verified:" + signUpRequestDTO.getEmail());
+
         return new SignUpResponseDTO(member.getMemberId(),"회원가입 성공");
     }
+    // 1-2. 이메일 검증 여부 확인
+    public void checkEmailVerified(String email) {
+        String verified=redisUtil.getData("verified:"+email);
+        if (!"true".equals(verified)) {
+            throw new BusinessLogicException(MemberErrorCode.EMAIL_NOT_VERIFIED);
+        }
+    }
+    /* 2. 로그인 */
+    // 2-1. 로그인
+    public Member login(LoginRequestDTO loginRequestDTO) {
+        // 아이디로 사용자 조회
+        Member member=memberRepository.findById(loginRequestDTO.getId()).orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+
+       if (!bCryptPasswordEncoder.matches(loginRequestDTO.getPwd(),member.getPwd())){
+           throw new BusinessLogicException(MemberErrorCode.PASSWORD_MISMATCH);
+       }
+       return member;
+    }
+
 }
