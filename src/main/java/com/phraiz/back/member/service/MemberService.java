@@ -1,14 +1,17 @@
 package com.phraiz.back.member.service;
 
 import com.phraiz.back.common.exception.custom.BusinessLogicException;
+import com.phraiz.back.common.security.jwt.JwtUtil;
 import com.phraiz.back.common.util.RedisUtil;
 import com.phraiz.back.member.domain.Member;
 import com.phraiz.back.member.dto.request.LoginRequestDTO;
 import com.phraiz.back.member.dto.request.SignUpRequestDTO;
+import com.phraiz.back.member.dto.response.LoginResponseDTO;
 import com.phraiz.back.member.dto.response.SignUpResponseDTO;
 import com.phraiz.back.member.exception.MemberErrorCode;
 import com.phraiz.back.member.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,7 +25,37 @@ public class MemberService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     @Autowired
     private RedisUtil redisUtil;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
+    // token 재발급
+    public LoginResponseDTO refreshToken(String refreshToken) {
+        // refresh token 유효성 검사
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new BusinessLogicException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        String id=jwtUtil.getSubjectFromToken(refreshToken);
+
+        // redis 에 저장된 refresh 토큰과 일치확인
+        String storedRefreshToken=redisTemplate.opsForValue().get("RT:"+id);
+
+        if (storedRefreshToken==null || !storedRefreshToken.equals(refreshToken)) {
+            throw new IllegalArgumentException("저장된 refresh token과 일치하지 않습니다.");
+        }
+        // 새로운 access token 발급
+        String newAccessToken = jwtUtil.generateToken(id);
+
+        Member member=memberRepository.findById(id).orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+
+        return new LoginResponseDTO(newAccessToken,refreshToken,
+                member.getMemberId(),
+                member.getId(),
+                member.getEmail(),
+                member.getRole());
+    }
     /* 1. 회원가입 */
     // 1-1. 회원가입
     public SignUpResponseDTO signUp(SignUpRequestDTO signUpRequestDTO) {

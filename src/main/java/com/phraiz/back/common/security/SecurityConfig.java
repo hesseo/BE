@@ -2,10 +2,12 @@ package com.phraiz.back.common.security;
 
 import com.phraiz.back.common.security.jwt.JwtAuthenticationFilter;
 import com.phraiz.back.common.security.jwt.JwtUtil;
+import com.phraiz.back.common.security.oauth.CustomOAuth2SuccessHandler;
+import com.phraiz.back.member.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -25,6 +27,10 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final RedisTemplate<String, String> redisTemplate;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
+
 
     // BCryptPasswordEncoder 등록
     // 비밀번호를 안전하게 암호화하기 위해 사용
@@ -38,14 +44,23 @@ public class SecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf->csrf.disable())
-                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->authorizeRequests
                         // TODO 인증 없이 접근 허용한 부분?
-                        .requestMatchers("/api/members/signUp","/api/members/login","/api/members/emails/**").permitAll()
+                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/emails/**").permitAll()
+                        .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login((oauth2Login) ->{
+                    oauth2Login
+                          //  .loginPage("/login")
+                            .userInfoEndpoint(userInfoEndpointConfig ->
+                            userInfoEndpointConfig.userService(customOAuth2UserService))
+                            .successHandler(customOAuth2SuccessHandler);
+                })
+                .addFilterBefore(new JwtAuthenticationFilter(jwtUtil, userDetailsService,redisTemplate), UsernamePasswordAuthenticationFilter.class)
                 .build();
+
     }
 
     // 로그인 시 사용자의 id/pw를 DB에서 불러와서 검증하는 로직을 Spring Security에 등록
@@ -62,6 +77,7 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManagerBean(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
+
     // 스프링 시큐리티 기능 비활성화
 //    @Bean
 //    public WebSecurityCustomizer configure(){

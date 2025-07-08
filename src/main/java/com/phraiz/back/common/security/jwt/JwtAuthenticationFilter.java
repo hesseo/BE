@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,23 +19,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil; // 검증, 추출
     private final UserDetailsService userDetailsService; // id로 사용자 정보 불러오는 시큐리티 인터페이스
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, UserDetailsService userDetailsService, RedisTemplate<String, String> redisTemplate) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.redisTemplate = redisTemplate;
     }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String token=getJwtToken(request);
-
+        System.out.println("JwtAuthenticationFilter 작동중, 요청 URI: " + request.getRequestURI());
         if(token!=null && jwtUtil.validateToken(token)){ // 토큰 존재&유효
-            String id=jwtUtil.getIdFromToken(token); // 사용자 id 추출
+            // 블랙리스트 토큰 검사 추가
+            String isLogout = redisTemplate.opsForValue().get(token);
+            if ("logout".equals(isLogout)) {
+                // 이미 로그아웃된 토큰 → 인증 거부
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("This token is logged out.");
+                return;
+            }
+            String id=jwtUtil.getSubjectFromToken(token); // 사용자 id 추출
             UserDetails userDetails = userDetailsService.loadUserByUsername(id);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()); // 시큐리티에서 사용하는 인증 객체 생성
             authentication.setDetails(new WebAuthenticationDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication); // 현재 요청에 대해 "인증된 사용자" 로 등록
+
         }
         filterChain.doFilter(request, response);
+
     }
 
     // jwt 추출
@@ -45,4 +58,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         return token;
     }
+
 }
