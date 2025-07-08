@@ -7,16 +7,16 @@ spring:
     username: ${DEV_DB_USERNAME}
     password: ${DEV_DB_PASSWORD}
 
-#  redis:
-#    host: ${REDIS_HOST}
-#    port: 6379
-#    timeout: 5000
-#    lettuce:
-#      shutdown-timeout: 100
-#      pool:
-#        max-active: 10
-#        max-idle: 5
-#        min-idle: 1
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+      timeout: 5000
+      lettuce:
+        shutdown-timeout: 100
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
 
   jpa:
     hibernate:
