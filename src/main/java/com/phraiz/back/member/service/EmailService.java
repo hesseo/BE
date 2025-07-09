@@ -23,23 +23,22 @@ import java.util.Random;
 public class EmailService {
     @Autowired
     private final JavaMailSender emailSender;
-    private int authNum;
     @Autowired
     private RedisUtil redisUtil;
 
     // 임의의 6자리 양수 반환
-    public void makeRandNum(){
+    public String makeRandNum(){
         Random rand = new Random();
         StringBuilder randNum= new StringBuilder();
         for(int i=0;i<6;i++){
             randNum.append(Integer.toString(rand.nextInt(10)));
         }
-        authNum = Integer.parseInt(randNum.toString());
+        return randNum.toString();
     }
 
     // 랜덤 인증번호 생성-> 메일 발송
     public String joinEmail(String email) throws MessagingException {
-        makeRandNum();
+        String authNum = makeRandNum();
         String toMail = email;
         String title = "회원 가입 인증 이메일 입니다."; // 이메일 제목
         String content =
@@ -48,13 +47,13 @@ public class EmailService {
                         "인증 번호는 <b>" + authNum + "</b>입니다." +
                         "<br>" ; //이메일 내용 삽입
 
-        sendMail(toMail, title, content);
-        return Integer.toString(authNum);
+        sendMail(toMail, title, content,authNum);
+        return authNum;
 
 
     }
     // 이메일 전송
-    public void sendMail(String to, String subject, String text) throws MessagingException {
+    public void sendMail(String to, String subject, String text, String authNum) throws MessagingException {
         MimeMessage mimeMessage = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "utf-8");
         helper.setTo(to);
@@ -67,7 +66,7 @@ public class EmailService {
             throw new RuntimeException("이메일 전송 불가능",e);
         }
         // Redis에 인증번호 저장-검증을 위함
-        redisUtil.setDataExpire(Integer.toString(authNum),to,60*5L);
+        redisUtil.setDataExpire(authNum,to,60*5L);
 
     }
     // 사용자가 입력한 인증 번호와 실제 인증 번호 비교

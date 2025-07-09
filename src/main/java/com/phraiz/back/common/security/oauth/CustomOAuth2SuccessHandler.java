@@ -24,6 +24,9 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         CustomOAuth2User customOAuth2User= (CustomOAuth2User) authentication.getPrincipal();
         String id=customOAuth2User.getUsername();
 
+        System.out.println("로그인 유저: " + customOAuth2User);  // 로그 확인
+        System.out.println("유저 ID: " + customOAuth2User.getUsername()); // 네이버/카카오 모두 찍히는지
+
         // 토큰 발급 //
         // 토큰 생성
         String accessToken = jwtUtil.generateToken(id);

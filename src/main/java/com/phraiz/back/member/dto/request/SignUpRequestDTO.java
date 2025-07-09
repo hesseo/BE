@@ -9,7 +9,7 @@ public class SignUpRequestDTO {
     private String id;
     private String pwd;
     private String email;
-    private LoginType loginType;
+    private LoginType loginType=LoginType.LOCAL;
     private Long planId;
 
     public Member toEntity() {

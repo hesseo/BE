@@ -10,6 +10,7 @@ import com.phraiz.back.member.dto.response.LoginResponseDTO;
 import com.phraiz.back.member.dto.response.SignUpResponseDTO;
 import com.phraiz.back.member.exception.MemberErrorCode;
 import com.phraiz.back.member.repository.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+@Slf4j
 @Service
 public class MemberService {
     @Autowired
@@ -66,7 +68,6 @@ public class MemberService {
         if (memberRepository.existsByEmail(signUpRequestDTO.getEmail())) {
             throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
         }
-
         // 비밀번호 암호화
         String encodedPwd=bCryptPasswordEncoder.encode(signUpRequestDTO.getPwd());
 
@@ -90,11 +91,12 @@ public class MemberService {
             throw new BusinessLogicException(MemberErrorCode.EMAIL_NOT_VERIFIED);
         }
     }
+
     /* 2. 로그인 */
     // 2-1. 로그인
     public Member login(LoginRequestDTO loginRequestDTO) {
         // 아이디로 사용자 조회
-        Member member=memberRepository.findById(loginRequestDTO.getId()).orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+        Member member=memberRepository.findById(loginRequestDTO.getId()).orElseThrow(()->new BusinessLogicException(MemberErrorCode.USER_NOT_FOUND));
 
        if (!bCryptPasswordEncoder.matches(loginRequestDTO.getPwd(),member.getPwd())){
            throw new BusinessLogicException(MemberErrorCode.PASSWORD_MISMATCH);
