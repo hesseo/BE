@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Entity
 @Table(name = "member")
@@ -40,6 +41,10 @@ public class Member {
 
     @Column(nullable = false)
     private String role;
+
+    public Member(Optional<Member> user) {
+
+    }
 
     @PrePersist
     public void prePersist() {

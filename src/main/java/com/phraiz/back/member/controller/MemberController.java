@@ -1,5 +1,6 @@
 package com.phraiz.back.member.controller;
 
+import com.phraiz.back.common.exception.custom.BusinessLogicException;
 import com.phraiz.back.common.security.jwt.JwtUtil;
 import com.phraiz.back.common.security.user.CustomUserDetails;
 import com.phraiz.back.member.domain.Member;
@@ -9,9 +10,13 @@ import com.phraiz.back.member.dto.request.LoginRequestDTO;
 import com.phraiz.back.member.dto.request.SignUpRequestDTO;
 import com.phraiz.back.member.dto.response.LoginResponseDTO;
 import com.phraiz.back.member.dto.response.SignUpResponseDTO;
+import com.phraiz.back.member.exception.MemberErrorCode;
+import com.phraiz.back.member.repository.MemberRepository;
 import com.phraiz.back.member.service.EmailService;
 import com.phraiz.back.member.service.MemberService;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -34,15 +38,28 @@ public class MemberController {
     private final EmailService emailService;
     private final JwtUtil jwtUtil;
     private final RedisTemplate<String, String> redisTemplate;
+    private final MemberRepository memberRepository;
 
     // accessToken 재발급
     // AccessToken은 만료기간이 짧기 때문에, 매번 로그인하는 대신 RefreshToken으로 연장
+    // 토큰 갱신 시 Access Token과 Refresh Token을 모두 새로 발급
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDTO> refreshToken(@RequestHeader("Authorization") String refreshTokenHeader) {
-        // "Bearer " 제거
-        String refreshToken=refreshTokenHeader.replace("Bearer ", "");
-
+    public ResponseEntity<LoginResponseDTO> refreshToken(@CookieValue("refreshToken") String refreshToken,
+                                                         HttpServletResponse response) {
+        // 서비스에서 새로운 토큰들 생성
        LoginResponseDTO responseDTO=memberService.refreshToken(refreshToken);
+
+       // 새로운 refresh 토큰을 redis에서 가져오기
+        String newRefreshToken=redisTemplate.opsForValue().get("RT:"+responseDTO.getId());
+        // 새로운 refresh 토큰을 쿠키에 저장
+        Cookie refreshTokenCookie = new Cookie("refreshToken", newRefreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true);
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime() / 1000));
+
+        response.addCookie(refreshTokenCookie);
+
        return ResponseEntity.ok(responseDTO);
 
     }
@@ -95,7 +112,7 @@ public class MemberController {
     /* 2. 로그인 */
     // 2-1. 로그인
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
         Member member = memberService.login(loginRequestDTO);
 
         // 토큰 생성
@@ -109,33 +126,58 @@ public class MemberController {
                 jwtUtil.getRefreshTokenExpTime(),TimeUnit.MILLISECONDS
         );
 
+        // refresh token을 httpOnly 쿠키에 저장
+        // 헤더에는 access만 남기고 refresh는 HttpOnly 쿠키에만 저장하는 구조가 더 안전
+        // Access는 클라이언트가 직접 들고 있다가, 요청할 때마다 헤더에 넣어서 보내기
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true); // https 에서만 전송
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime()/1000)); // 초 단위로 변환
 
-        LoginResponseDTO loginResponseDTO = new LoginResponseDTO(accessToken,refreshToken,member.getMemberId(),member.getId(),member.getEmail(),member.getRole());
+        response.addCookie(refreshTokenCookie);
+
+        // 응답 DTO에서는 refreshToken 제거
+        LoginResponseDTO loginResponseDTO = new LoginResponseDTO(accessToken,member.getMemberId(),member.getId(),member.getEmail(),member.getRole());
         return ResponseEntity.ok(loginResponseDTO);
     }
     // 2-2. 로그아웃
+    // access 토큰 받아서 처리
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, Object>> logout(@RequestHeader("Authorization") String token,
+    public ResponseEntity<Map<String, Object>> logout(@RequestHeader("Authorization") String token,@CookieValue(value = "refreshToken", required = false) String refreshToken,
                                          @AuthenticationPrincipal CustomUserDetails customUserDetails) {
-        // bearer 제거
-        String jwt=token.replace("Bearer ", "");
-        // jwt 만료 시간 계산
-        long expire=jwtUtil.getAccessTokenExpTime();
-        // redis에 저장(키: 토큰, value: "logout", ttl: 만료시간)
-        // accessToken 블랙리스트 등록
-        redisTemplate.opsForValue().set(jwt,"logout",expire, TimeUnit.MILLISECONDS);
-        // refreshToken redis에서 삭제
-        redisTemplate.delete("RT:"+customUserDetails.getUsername());
+            // 토큰 유효성 검증
+            if (!jwtUtil.validateToken(token.replace("Bearer ", ""))) {
+                throw new BusinessLogicException(MemberErrorCode.INVALID_ACCESS_TOKEN);
+            }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "logout success");
+            // bearer 제거(access token)
+            String jwt = token.replace("Bearer ", "");
+            // jwt 만료 시간 계산
+            long expire = jwtUtil.getAccessTokenExpTime();
+            // redis에 저장(키: 토큰, value: "logout", ttl: 만료시간)
+            // accessToken 블랙리스트 등록
+            redisTemplate.opsForValue().set(jwt, "logout", expire, TimeUnit.MILLISECONDS);
+            // refreshToken redis에서 삭제
+            redisTemplate.delete("RT:" + customUserDetails.getUsername());
 
-        return ResponseEntity.ok(response);
+            // 쿠키 삭제
+            Cookie deleteCookie=new Cookie("refreshToken", null);
+            deleteCookie.setMaxAge(0);
+            deleteCookie.setPath("/");
+            deleteCookie.setHttpOnly(true);
+           // response.addCookie(deleteCookie);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "logout success");
+
+            return ResponseEntity.ok(response);
 
     }
 
     // 2-3. 아이디, 비밀번호 찾기
 
     /* 3. 회원정보 수정 */
+
 }

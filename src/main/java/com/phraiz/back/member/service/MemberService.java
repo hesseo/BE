@@ -17,6 +17,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 
 @Slf4j
 @Service
@@ -32,14 +34,14 @@ public class MemberService {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    // token 재발급
+    // token 재발급-RTR 방식으로
     public LoginResponseDTO refreshToken(String refreshToken) {
         // refresh token 유효성 검사
         if (!jwtUtil.validateToken(refreshToken)) {
             throw new BusinessLogicException(MemberErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        String id=jwtUtil.getSubjectFromToken(refreshToken);
+        String id=jwtUtil.getSubjectFromToken(refreshToken); // 사용자의 고유 아이디
 
         // redis 에 저장된 refresh 토큰과 일치확인
         String storedRefreshToken=redisTemplate.opsForValue().get("RT:"+id);
@@ -49,10 +51,20 @@ public class MemberService {
         }
         // 새로운 access token 발급
         String newAccessToken = jwtUtil.generateToken(id);
+        // 새로운 refresh token 발급
+        String newRefreshToken = jwtUtil.generateToken(id);
 
-        Member member=memberRepository.findById(id).orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+        // Redis 업데이트: 기존 삭제 후 새로운 것 저장
+        redisTemplate.delete("RT:"+id);
+        redisTemplate.opsForValue().set(
+                "RT:"+id,
+                newRefreshToken,jwtUtil.getRefreshTokenExpTime(), TimeUnit.MILLISECONDS
+        );
 
-        return new LoginResponseDTO(newAccessToken,refreshToken,
+        Member member=memberRepository.findById(id)
+                .orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+
+        return new LoginResponseDTO(newAccessToken,
                 member.getMemberId(),
                 member.getId(),
                 member.getEmail(),
