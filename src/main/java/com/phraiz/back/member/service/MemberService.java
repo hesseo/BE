@@ -8,15 +8,22 @@ import com.phraiz.back.member.dto.request.LoginRequestDTO;
 import com.phraiz.back.member.dto.request.SignUpRequestDTO;
 import com.phraiz.back.member.dto.response.LoginResponseDTO;
 import com.phraiz.back.member.dto.response.SignUpResponseDTO;
+import com.phraiz.back.member.enums.LoginType;
 import com.phraiz.back.member.exception.MemberErrorCode;
 import com.phraiz.back.member.repository.MemberRepository;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 
@@ -33,6 +40,8 @@ public class MemberService {
     private JwtUtil jwtUtil;
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+    @Autowired
+    private EmailService emailService;
 
     // token 재발급-RTR 방식으로
     public LoginResponseDTO refreshToken(String refreshToken) {
@@ -61,6 +70,7 @@ public class MemberService {
                 newRefreshToken,jwtUtil.getRefreshTokenExpTime(), TimeUnit.MILLISECONDS
         );
 
+
         Member member=memberRepository.findById(id)
                 .orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
 
@@ -70,6 +80,21 @@ public class MemberService {
                 member.getEmail(),
                 member.getRole());
     }
+
+    // 쿠키에 저장
+    public Cookie addCookie(String refreshToken){
+        // refresh token을 httpOnly 쿠키에 저장
+        // 헤더에는 access만 남기고 refresh는 HttpOnly 쿠키에만 저장하는 구조가 더 안전
+        // Access는 클라이언트가 직접 들고 있다가, 요청할 때마다 헤더에 넣어서 보내기
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        // 새로운 refresh 토큰을 쿠키에 저장
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true); // https 에서만 전송
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime() / 1000)); // 초 단위로 변환
+        return refreshTokenCookie;
+    }
+
     /* 1. 회원가입 */
     // 1-1. 회원가입
     public SignUpResponseDTO signUp(SignUpRequestDTO signUpRequestDTO) {
@@ -80,6 +105,7 @@ public class MemberService {
         if (memberRepository.existsByEmail(signUpRequestDTO.getEmail())) {
             throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
         }
+        checkEmailVerified(signUpRequestDTO.getEmail());
         // 비밀번호 암호화
         String encodedPwd=bCryptPasswordEncoder.encode(signUpRequestDTO.getPwd());
 
@@ -88,6 +114,7 @@ public class MemberService {
                 .pwd(encodedPwd)
                 .email(signUpRequestDTO.getEmail())
                 .loginType(signUpRequestDTO.getLoginType())
+                .planId(signUpRequestDTO.getPlanId())
                 .build();
         memberRepository.save(member);
 
@@ -116,4 +143,26 @@ public class MemberService {
        return member;
     }
 
+    // 2-3. 이메일 입력 시 이메일로 아이디 전송
+    public void findId(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessLogicException(MemberErrorCode.EMAIL_NOT_REGISTERED));
+        LoginType loginType=member.getLoginType();
+        if (!loginType.equals(LoginType.LOCAL)){
+            throw  new BusinessLogicException(MemberErrorCode.SOCIAL_USER_NO_ID);
+        }
+            String id=member.getId();
+            String title = "회원 아이디입니다.";
+            String content =
+                    "<p>Phraiz</p>" + 	//html 형식으로 작성
+                            "<br><br>" +
+                            "아이디는 <b>" + id + "</b>입니다." +
+                            "<br>" ; //이메일 내용 삽입
+
+        try {
+            emailService.sendMail(email,title,content,null);
+        } catch (MessagingException e) {
+            throw new RuntimeException("이메일 전송 실패",e);
+        }
+    }
 }

@@ -22,6 +22,7 @@ public class Member {
     @Column(name = "member_id", updatable = false)
     private Long memberId; // 멤버 식별자
 
+    @Column(nullable = false)
     private Long planId;
 
     @Column(nullable = false, unique = true)
@@ -42,9 +43,6 @@ public class Member {
     @Column(nullable = false)
     private String role;
 
-    public Member(Optional<Member> user) {
-
-    }
 
     @PrePersist
     public void prePersist() {

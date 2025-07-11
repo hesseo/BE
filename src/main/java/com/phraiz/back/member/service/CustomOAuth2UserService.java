@@ -74,6 +74,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .loginType(loginType)
                     .id(oAuth2Response.getProviderId())
                     .email(oAuth2Response.getEmail())
+                    .planId(1L)
                     .role(null)
                     .build();
             memberRepository.save(member);

@@ -10,7 +10,7 @@ public class SignUpRequestDTO {
     private String pwd;
     private String email;
     private LoginType loginType=LoginType.LOCAL;
-    private Long planId;
+    private Long planId=1L; // 기본 free
 
     public Member toEntity() {
         return Member.builder()

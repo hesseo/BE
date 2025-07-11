@@ -37,9 +37,8 @@ public class EmailService {
     }
 
     // 랜덤 인증번호 생성-> 메일 발송
-    public String joinEmail(String email) throws MessagingException {
+    public void joinEmail(String email) throws MessagingException {
         String authNum = makeRandNum();
-        String toMail = email;
         String title = "회원 가입 인증 이메일 입니다."; // 이메일 제목
         String content =
                 "<p>Phraiz</p>" + 	//html 형식으로 작성
@@ -47,9 +46,7 @@ public class EmailService {
                         "인증 번호는 <b>" + authNum + "</b>입니다." +
                         "<br>" ; //이메일 내용 삽입
 
-        sendMail(toMail, title, content,authNum);
-        return authNum;
-
+        sendMail(email, title, content,authNum);
 
     }
     // 이메일 전송
@@ -62,11 +59,15 @@ public class EmailService {
         try {
             emailSender.send(mimeMessage);
         } catch (MailException e) {
+            System.err.println("이메일 전송 실패: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("이메일 전송 불가능",e);
         }
-        // Redis에 인증번호 저장-검증을 위함
-        redisUtil.setDataExpire(authNum,to,60*5L);
+        if (authNum != null) {
+            // Redis에 인증번호 저장-검증을 위함
+            redisUtil.setDataExpire(authNum,to,60*5L);
+        }
+
 
     }
     // 사용자가 입력한 인증 번호와 실제 인증 번호 비교

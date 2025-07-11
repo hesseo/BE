@@ -3,10 +3,12 @@ package com.phraiz.back.common.security.oauth;
 import com.phraiz.back.common.security.jwt.JwtUtil;
 import com.phraiz.back.member.dto.response.oauth.CustomOAuth2User;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -39,10 +41,15 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
                 jwtUtil.getRefreshTokenExpTime(), TimeUnit.MILLISECONDS
         );
 
-        // TODO 클라이언트로 토큰 전달: 쿼리 파라미터로 또는 쿠키로 ????????
+        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
+        refreshTokenCookie.setHttpOnly(true);
+        refreshTokenCookie.setSecure(true); // https 에서만 전송
+        refreshTokenCookie.setPath("/");
+        refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime() / 1000));
+
+        // TODO
         String redirectUrl = "http://localhost:3000/oauth2/callback" +
-                "?accessToken=" + accessToken +
-                "&refreshToken=" + refreshToken;
+                "?accessToken=" + accessToken;
 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }

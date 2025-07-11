@@ -19,6 +19,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -44,10 +47,19 @@ public class SecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf->csrf.disable())
+//                .cors(cors -> cors.configurationSource(exchange -> {
+//                    CorsConfiguration config = new CorsConfiguration();
+//                    config.setAllowedOrigins(List.of("", "http://localhost:3000", "http://localhost:8080", "https://ssu-phraiz-fe.vercel.app/"));
+//                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+//                    config.setAllowedHeaders(List.of("*"));
+//                    config.setExposedHeaders(List.of("Authorization"));
+//                    config.setAllowCredentials(true);
+//                    return config;
+//                }))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->authorizeRequests
                         // TODO 인증 없이 접근 허용한 부분?
-                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/emails/**").permitAll()
+                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/findUserId","/api/members/emails/**").permitAll()
                         .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
                 )
