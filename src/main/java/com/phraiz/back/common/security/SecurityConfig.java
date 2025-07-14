@@ -47,7 +47,7 @@ public class SecurityConfig {
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->authorizeRequests
                         // TODO 인증 없이 접근 허용한 부분?
-                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/emails/**").permitAll()
+                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/emails/**", "/**").permitAll()
                         .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
                 )
