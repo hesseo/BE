@@ -22,7 +22,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
+    username: ${MAIL_USERNAME:choeunbin0324}
     password: ${MAIL_PASSWORD}
     properties:
       mail:
@@ -36,7 +36,16 @@ spring:
           writetimeout: 5000
 
 jwt:
-  secret: ${JWT_SECRET_KEY}
-  access-token-validity: ${JWT_ACCESS_EXPIRE:3600000}
-  refresh-token-validity: ${JWT_REFRESH_EXPIRE:604800000}
+  secret-key: ${JWT_SECRET_KEY}
+  access-expire: ${JWT_ACCESS_EXPIRE:3600000}
+  refresh-expire: ${JWT_REFRESH_EXPIRE:604800000}
 mework.security: INFO
+
+openai:
+  secret-key: ${GPT_API_KEY}
+  model: gpt-4o
+  api-url: https://api.openai.com/v1/chat/completions
+  temperature:
+    paraphrase: 0.3
+    summary: 0.7
+  max-tokens: 500

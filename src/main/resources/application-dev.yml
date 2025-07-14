@@ -3,24 +3,24 @@ server:
 
 spring:
   datasource:
-    url: ${DEV_DB_URL}
-    username: ${DEV_DB_USERNAME}
-    password: ${DEV_DB_PASSWORD}
+    url: ${DEV_DB_URL:jdbc:mysql://localhost:3306/phraiz}
+    username: ${DEV_DB_USERNAME:root}
+    password: ${DEV_DB_PASSWORD:root}
 
-    redis:
-      host: ${REDIS_HOST}
-      port: 6379
-      timeout: 5000
-      lettuce:
-        shutdown-timeout: 100
-        pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 1
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: 6379
+    timeout: 5000
+    lettuce:
+      shutdown-timeout: 100
+      pool:
+        max-active: 10
+        max-idle: 5
+        min-idle: 1
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
