@@ -37,14 +37,13 @@ public class CiteController {
 
         // 1. URL을 Zotero Translation Server에 보내서 논문 등의 메타데이터를 가져옴
         ZoteroItem item = citeTranslationService.translateFromUrl(url);
-        //
-        response.put("title", item.getTitle());
-        response.put("type", item.getItemType());
-        response.put("url", item.getUrl());
-        response.put("date", item.getDate());
-        response.put("publicationTitle", item.getPublicationTitle());
-        // 스타일에 따른 인용문은 추후..추가
-        System.out.println(item.getTitle());
+
+//        response.put("title", item.getTitle());
+//        response.put("type", item.getItemType());
+//        response.put("url", item.getUrl());
+//        response.put("date", item.getDate());
+//        response.put("publicationTitle", item.getPublicationTitle());
+
         // 2. Zotero Web API에 아이템 저장 (또는 로컬에서 처리)
         // Zotero API 서버에 POST 요청을 보내고, 생성된 itemKey를 받아옴
         //String itemKey = citeService.createItem(item);
@@ -56,7 +55,10 @@ public class CiteController {
         // 1. cslJson은 변환
         JSONObject cslJson=citeConvertService.toCSL(item);
         // 2. cls Processor 사용
-        citeService.generateCite(style, cslJson);
+        String citation=citeService.generateCite(style, cslJson);
+        System.out.println("citation:"+citation);
+
+        response.put("citation", citation);
 
         return ResponseEntity.ok(response);
     }

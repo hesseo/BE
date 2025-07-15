@@ -16,15 +16,13 @@ import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 
 @Slf4j
@@ -44,7 +42,7 @@ public class MemberService {
     private EmailService emailService;
 
     // token 재발급-RTR 방식으로
-    public LoginResponseDTO refreshToken(String refreshToken) {
+    public LoginResponseDTO reissueToken(String refreshToken) {
         // refresh token 유효성 검사
         if (!jwtUtil.validateToken(refreshToken)) {
             throw new BusinessLogicException(MemberErrorCode.INVALID_REFRESH_TOKEN);
@@ -61,14 +59,14 @@ public class MemberService {
         // 새로운 access token 발급
         String newAccessToken = jwtUtil.generateToken(id);
         // 새로운 refresh token 발급
-        String newRefreshToken = jwtUtil.generateToken(id);
+        //String newRefreshToken = jwtUtil.generateToken(id);
 
         // Redis 업데이트: 기존 삭제 후 새로운 것 저장
-        redisTemplate.delete("RT:"+id);
-        redisTemplate.opsForValue().set(
-                "RT:"+id,
-                newRefreshToken,jwtUtil.getRefreshTokenExpTime(), TimeUnit.MILLISECONDS
-        );
+//        redisTemplate.delete("RT:"+id);
+//        redisTemplate.opsForValue().set(
+//                "RT:"+id,
+//                newRefreshToken,jwtUtil.getRefreshTokenExpTime(), TimeUnit.MILLISECONDS
+//        );
 
 
         Member member=memberRepository.findById(id)
@@ -92,6 +90,7 @@ public class MemberService {
         refreshTokenCookie.setSecure(true); // https 에서만 전송
         refreshTokenCookie.setPath("/");
         refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime() / 1000)); // 초 단위로 변환
+        refreshTokenCookie.setAttribute("SameSite", "None"); // Spring에서 직접 지원 안하면 response 헤더로 수동 추가 필요
         return refreshTokenCookie;
     }
 
@@ -164,5 +163,17 @@ public class MemberService {
         } catch (MessagingException e) {
             throw new RuntimeException("이메일 전송 실패",e);
         }
+    }
+
+    // 3. 회원정보 가져오기
+    public LoginResponseDTO getMember(String id, String accessToken) {
+        Member member=memberRepository.findById(id)
+                .orElseThrow(()->new UsernameNotFoundException("존재하지 않는 사용자입니다."));
+
+        return new LoginResponseDTO(accessToken,
+                member.getMemberId(),
+                member.getId(),
+                member.getEmail(),
+                member.getRole());
     }
 }

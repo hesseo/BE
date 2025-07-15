@@ -1,6 +1,11 @@
 package com.phraiz.back.member.service;
 
+import com.phraiz.back.common.exception.custom.BusinessLogicException;
 import com.phraiz.back.common.util.RedisUtil;
+import com.phraiz.back.member.domain.Member;
+import com.phraiz.back.member.dto.response.LoginResponseDTO;
+import com.phraiz.back.member.exception.MemberErrorCode;
+import com.phraiz.back.member.repository.MemberRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +15,7 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +27,9 @@ import java.util.Random;
 @Slf4j
 // 인증코드 생성하고 이메일 보내는 서비스
 public class EmailService {
-    @Autowired
     private final JavaMailSender emailSender;
-    @Autowired
-    private RedisUtil redisUtil;
+    private final RedisUtil redisUtil;
+    private final MemberRepository memberRepository;
 
     // 임의의 6자리 양수 반환
     public String makeRandNum(){
@@ -51,6 +56,7 @@ public class EmailService {
     }
     // 이메일 전송
     public void sendMail(String to, String subject, String text, String authNum) throws MessagingException {
+
         MimeMessage mimeMessage = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "utf-8");
         helper.setTo(to);
@@ -81,6 +87,9 @@ public class EmailService {
             return false;
         }
     }
-
-
+    // 이메일로 사용자 찾기 존재->true
+    public boolean getMemberByEmail(String email) {
+        // 등록된 이메일인지 확인
+        return memberRepository.existsByEmail(email);
+    }
 }

@@ -1,6 +1,6 @@
 package com.phraiz.back.member.service;
 
-import com.phraiz.back.member.dto.response.cite.CreatorDTO;
+import com.phraiz.back.member.dto.response.cite.Creator;
 import com.phraiz.back.member.dto.response.cite.ZoteroItem;
 import lombok.RequiredArgsConstructor;
 import net.minidev.json.JSONArray;
@@ -18,6 +18,7 @@ public class CiteConvertService {
         // ZoteroItem → JSONObject (CSL JSON)
         JSONObject cslJson = new JSONObject();
         // 기본 필드 매핑
+        cslJson.put("id", generateUniqueId(zoteroItem));
         cslJson.put("type", convertType(zoteroItem.getItemType()));
         cslJson.put("title", zoteroItem.getTitle());
         cslJson.put("author", convertAuthors(zoteroItem.getCreators()));
@@ -42,9 +43,9 @@ public class CiteConvertService {
         }
 
 
-    private JSONArray convertAuthors(List<CreatorDTO> creators) {
+    private JSONArray convertAuthors(List<Creator> creators) {
         JSONArray authors = new JSONArray();
-        for (CreatorDTO creator : creators) {
+        for (Creator creator : creators) {
             JSONObject author = new JSONObject();
             author.put("given", creator.getFirstName());
             author.put("family", creator.getLastName());
@@ -73,6 +74,17 @@ public class CiteConvertService {
 
         issued.put("date-parts", dateParts);
         return issued;
+    }
+    private String generateUniqueId(ZoteroItem zoteroItem) {
+            // URL이 있으면 URL 해시 사용
+            if (zoteroItem.getUrl() != null) {
+                return "url-" + Math.abs(zoteroItem.getUrl().hashCode());
+            }
+
+            // 3. 제목 + 저자 사용
+            String combined = zoteroItem.getTitle() + zoteroItem.getCreators().get(0).getFirstName() + zoteroItem.getCreators().get(0).getLastName();
+            return "item-" + Math.abs(combined.hashCode());
+
     }
 }
 

@@ -23,7 +23,7 @@ public class Member {
     private Long memberId; // 멤버 식별자
 
     @Column(nullable = false)
-    private int planId;
+    private Long planId;
     // 기본값 0 : free?
 
     @Column(nullable = false, unique = true)

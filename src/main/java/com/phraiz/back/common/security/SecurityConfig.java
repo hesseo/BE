@@ -47,19 +47,25 @@ public class SecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf->csrf.disable())
-//                .cors(cors -> cors.configurationSource(exchange -> {
-//                    CorsConfiguration config = new CorsConfiguration();
-//                    config.setAllowedOrigins(List.of("", "http://localhost:3000", "http://localhost:8080", "https://ssu-phraiz-fe.vercel.app/"));
-//                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-//                    config.setAllowedHeaders(List.of("*"));
-//                    config.setExposedHeaders(List.of("Authorization"));
-//                    config.setAllowCredentials(true);
-//                    return config;
-//                }))
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(List.of(
+                        "http://localhost:3000",
+                        "http://localhost:8080",
+                        "https://ssu-phraiz-fe.vercel.app"
+                    ));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setExposedHeaders(List.of("Authorization")); // 프론트에서 Authorization 헤더 접근할 수 있도록
+                    config.setAllowCredentials(true); // 쿠키 전달 허용
+                    return config;
+                }))
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->authorizeRequests
                         // TODO 인증 없이 접근 허용한 부분?
-                        .requestMatchers("/api/members/refresh","/api/members/signUp","/api/members/login","/api/members/findUserId","/api/members/emails/**","/api/cite/**").permitAll()
+                        .requestMatchers("/api/members/reissue","/api/members/signUp","/api/members/login","/api/members/findId",
+                                "/api/members/emails/**", "/api/oauth/token",
+                                "/api/cite/**").permitAll()
                         .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
                 )

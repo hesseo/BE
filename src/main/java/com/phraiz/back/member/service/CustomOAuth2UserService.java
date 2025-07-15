@@ -8,6 +8,7 @@ import com.phraiz.back.member.dto.response.oauth.*;
 import com.phraiz.back.member.enums.LoginType;
 import com.phraiz.back.member.exception.MemberErrorCode;
 import com.phraiz.back.member.repository.MemberRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     @Autowired
@@ -56,7 +58,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         LoginType loginType = LoginType.from(registrationId);
 
         // db에 존재하는지 확인
-        //String username = oAuth2Response.getProvider()+" "+oAuth2Response.getProviderId();
         String username = oAuth2Response.getProviderId();
         Member existMember=memberRepository.findById(username).orElse(null);
         String role=null;
@@ -66,7 +67,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             // 이메일 중복 확인
             Optional<Member> optionalMember=memberRepository.findByEmail(oAuth2Response.getEmail());
             if(optionalMember.isPresent()){
-                //throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
                 throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
             }
 
@@ -74,7 +74,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .loginType(loginType)
                     .id(oAuth2Response.getProviderId())
                     .email(oAuth2Response.getEmail())
-                    .planId(1)
+                    .planId(1L)
                     .role(null)
                     .build();
             memberRepository.save(member);

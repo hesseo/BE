@@ -13,7 +13,7 @@ import java.util.List;
 public class ZoteroItem {
     private String itemType;
     private String title;
-    private List<CreatorDTO> creators;
+    private List<Creator> creators;
     private String publicationTitle;
     private String date;
     private String DOI;

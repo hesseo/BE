@@ -8,12 +8,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -27,7 +28,7 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         String id=customOAuth2User.getUsername();
 
         System.out.println("로그인 유저: " + customOAuth2User);  // 로그 확인
-        System.out.println("유저 ID: " + customOAuth2User.getUsername()); // 네이버/카카오 모두 찍히는지
+        System.out.println("유저 ID: " + id); // 네이버/카카오 모두 찍히는지
 
         // 토큰 발급 //
         // 토큰 생성
@@ -48,10 +49,21 @@ public class CustomOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
         refreshTokenCookie.setMaxAge((int) (jwtUtil.getRefreshTokenExpTime() / 1000));
 
         // TODO
-        String redirectUrl = "http://localhost:3000/oauth2/callback" +
-                "?accessToken=" + accessToken;
+        // 임시 토큰 만들기
+        String tempToken = UUID.randomUUID().toString();
+        // Redis에 저장 (userId → tempCode or tempCode → userId)
+        redisTemplate.opsForValue().set(tempToken, id, Duration.ofMinutes(5));
 
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+//        String redirectUrl = "https://ssu-phraiz-fe.vercel.app/oauth2/callback" +
+//                "?accessToken=" + accessToken;
+
+        String redirectUrl="https://ssu-phraiz-fe.vercel.app/login/oauth?tempToken=" + tempToken;
+        response.sendRedirect(redirectUrl);
+
+        // 쿠키, 타임리프, 엔드포인트를 하나 만들기
+        // cors 설정
+
+//        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
 

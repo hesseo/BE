@@ -5,6 +5,8 @@ import de.undercouch.citeproc.ListItemDataProvider;
 import de.undercouch.citeproc.csl.CSLItemData;
 import de.undercouch.citeproc.helper.json.JsonLexer;
 import de.undercouch.citeproc.helper.json.JsonParser;
+import de.undercouch.citeproc.output.Citation;
+
 import net.minidev.json.JSONObject;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
+import java.util.List;
 
 @Service
 public class CiteService {
@@ -27,9 +30,10 @@ public class CiteService {
             String styleContent = loadStyleContent(style);
             CSL csl = new CSL(provider, styleContent);
 
-//            Citation citation = csl.makeCitation(cslJson.getString("id"));
-//            return citation.getText();
-            return "";
+            List<Citation> citations = csl.makeCitation(cslJson.getAsString("id"));
+            Citation citation = citations.get(0);
+
+            return citation.getText();
         } catch (IOException e) {
             throw new RuntimeException("인용문 생성 실패",e);
         }

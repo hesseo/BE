@@ -18,8 +18,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,18 +40,18 @@ public class MemberController {
     // accessToken 재발급
     // AccessToken은 만료기간이 짧기 때문에, 매번 로그인하는 대신 RefreshToken으로 연장
     // 토큰 갱신 시 Access Token과 Refresh Token을 모두 새로 발급
-    @PostMapping("/refresh")
+    @PostMapping("/reissue")
     public ResponseEntity<LoginResponseDTO> refreshToken(@CookieValue("refreshToken") String refreshToken,
                                                          HttpServletResponse response) {
         // 서비스에서 새로운 토큰들 생성
-       LoginResponseDTO responseDTO=memberService.refreshToken(refreshToken);
+       LoginResponseDTO responseDTO=memberService.reissueToken(refreshToken);
 
-       // 새로운 refresh 토큰을 redis에서 가져오기
-        String newRefreshToken=redisTemplate.opsForValue().get("RT:"+responseDTO.getId());
-        // 새로운 refresh 토큰을 쿠키에 저장
-        Cookie refreshTokenCookie = memberService.addCookie(newRefreshToken);
+//       // 새로운 refresh 토큰을 redis에서 가져오기
+//        String newRefreshToken=redisTemplate.opsForValue().get("RT:"+responseDTO.getId());
+//        // 새로운 refresh 토큰을 쿠키에 저장
+//        Cookie refreshTokenCookie = memberService.addCookie(newRefreshToken);
 
-        response.addCookie(refreshTokenCookie);
+        //response.addCookie(refreshTokenCookie);
 
        return ResponseEntity.ok(responseDTO);
 
@@ -71,6 +69,9 @@ public class MemberController {
     // 1-2. 이메일 인증 번호 전송&인증
     @PostMapping("/emails/mailSend")
     public ResponseEntity<Map<String, Object>> sendEmail(@RequestBody EmailRequestDTO emailRequestDTO) {
+        if (emailService.getMemberByEmail(emailRequestDTO.getEmail())){
+            throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
+        }
         Map<String, Object> response = new HashMap<>();
         System.out.println("이메일 인증 요청이 들어옴");
         System.out.println("이메일 인증이메일: "+emailRequestDTO.getEmail());
@@ -173,4 +174,6 @@ public class MemberController {
         response.put("message", "입력하신 이메일로 아이디를 전송했습니다.");
         return ResponseEntity.ok(response);
     }
+
+
 }
