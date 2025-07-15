@@ -65,7 +65,8 @@ public class SecurityConfig {
                         // TODO 인증 없이 접근 허용한 부분?
                         .requestMatchers("/api/members/reissue","/api/members/signUp","/api/members/login","/api/members/findId",
                                 "/api/members/emails/**", "/api/oauth/token",
-                                "/api/cite/**").permitAll()
+                                "/api/cite/**",
+                                "/api/paraphrase/**", "/api/summary/**").permitAll()
 
                         .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
