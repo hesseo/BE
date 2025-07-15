@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/members/reissue","/api/members/signUp","/api/members/login","/api/members/findId",
                                 "/api/members/emails/**", "/api/oauth/token",
                                 "/api/cite/**").permitAll()
+
                         .requestMatchers("/api/members/logout").authenticated()
                         .anyRequest().authenticated()
                 )
