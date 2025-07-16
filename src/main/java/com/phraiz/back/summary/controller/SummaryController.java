@@ -38,7 +38,9 @@ public class SummaryController {
     @PostMapping("/summarize/one-line")
     public ResponseEntity<?> oneLineSummary(HttpServletRequest request, HttpServletResponse response,
                                             @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.oneLineSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
@@ -46,7 +48,9 @@ public class SummaryController {
     @PostMapping("/summarize/full")
     public ResponseEntity<?> fullSummary(HttpServletRequest request, HttpServletResponse response,
                                          @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.fullSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
@@ -54,7 +58,9 @@ public class SummaryController {
     @PostMapping("/summarize/by-paragraph")
     public ResponseEntity<?> paragraphSummary(HttpServletRequest request, HttpServletResponse response,
                                               @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.paragraphSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
@@ -62,7 +68,9 @@ public class SummaryController {
     @PostMapping("/summarize/key-points")
     public ResponseEntity<?> keyPointSummary(HttpServletRequest request, HttpServletResponse response,
                                              @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.keyPointSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
@@ -70,7 +78,9 @@ public class SummaryController {
     @PostMapping("/summarize/question-based")
     public ResponseEntity<?> questionBasedSummary(HttpServletRequest request, HttpServletResponse response,
                                                   @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.questionBasedSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
@@ -78,7 +88,9 @@ public class SummaryController {
     @PostMapping("/summarize/targeted")
     public ResponseEntity<?> targetedSummary(HttpServletRequest request, HttpServletResponse response,
                                              @RequestBody SummaryRequestDTO dto) {
-        String memberId = "user01";
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String memberId = authentication.getName(); // 보통 여기서 memberId 반환됨
         SummaryResponseDTO result = summaryService.targetedSummary(memberId, dto);
         return ResponseEntity.ok(result);
     }
