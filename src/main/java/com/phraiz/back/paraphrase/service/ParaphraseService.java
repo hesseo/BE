@@ -2,14 +2,13 @@ package com.phraiz.back.paraphrase.service;
 
 import com.phraiz.back.common.service.OpenAIService;
 import com.phraiz.back.common.service.RedisService;
-import com.phraiz.back.common.type.Plan;
+import com.phraiz.back.common.enums.Plan;
 import com.phraiz.back.common.util.GptTokenUtil;
 import com.phraiz.back.member.domain.Member;
-import com.phraiz.back.member.enums.LoginType;
 import com.phraiz.back.member.repository.MemberRepository;
 import com.phraiz.back.paraphrase.dto.request.ParaphraseRequestDTO;
 import com.phraiz.back.paraphrase.dto.response.ParaphraseResponseDTO;
-import lombok.Builder;
+import com.phraiz.back.paraphrase.enums.ParaphrasePrompt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,19 +28,19 @@ public class ParaphraseService {
     private final MemberRepository memberRepository;
 
     public ParaphraseResponseDTO paraphraseStandard(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
-        return paraphrase(memberId, paraphraseRequestDTO.getText(), "표준");
+        return paraphrase(memberId, paraphraseRequestDTO.getText(), ParaphrasePrompt.STANDARD.getPrompt());
     }
     public ParaphraseResponseDTO paraphraseAcademic(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
-        return paraphrase(memberId, paraphraseRequestDTO.getText(), "학술적인");
+        return paraphrase(memberId, paraphraseRequestDTO.getText(), ParaphrasePrompt.ACADEMIC.getPrompt());
     }
     public ParaphraseResponseDTO paraphraseCreative(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
-        return paraphrase(memberId, paraphraseRequestDTO.getText(), "창의적인");
+        return paraphrase(memberId, paraphraseRequestDTO.getText(), ParaphrasePrompt.CREATIVE.getPrompt());
     }
     public ParaphraseResponseDTO paraphraseFluency(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
-        return paraphrase(memberId, paraphraseRequestDTO.getText(), "유창한");
+        return paraphrase(memberId, paraphraseRequestDTO.getText(), ParaphrasePrompt.FLUENCY.getPrompt());
     }
     public ParaphraseResponseDTO paraphraseExperimental(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
-        return paraphrase(memberId, paraphraseRequestDTO.getText(), "실험적인");
+        return paraphrase(memberId, paraphraseRequestDTO.getText(), ParaphrasePrompt.EXPERIMENTAL.getPrompt());
     }
     public ParaphraseResponseDTO paraphraseCustom(String memberId, ParaphraseRequestDTO paraphraseRequestDTO){
         // target 값 추출

@@ -2,16 +2,13 @@ package com.phraiz.back.summary.service;
 
 import com.phraiz.back.common.service.OpenAIService;
 import com.phraiz.back.common.service.RedisService;
-import com.phraiz.back.common.type.Plan;
+import com.phraiz.back.common.enums.Plan;
 import com.phraiz.back.common.util.GptTokenUtil;
 import com.phraiz.back.member.domain.Member;
-import com.phraiz.back.member.enums.LoginType;
 import com.phraiz.back.member.repository.MemberRepository;
-import com.phraiz.back.paraphrase.dto.request.ParaphraseRequestDTO;
-import com.phraiz.back.paraphrase.dto.response.ParaphraseResponseDTO;
 import com.phraiz.back.summary.dto.request.SummaryRequestDTO;
 import com.phraiz.back.summary.dto.response.SummaryResponseDTO;
-import lombok.Builder;
+import com.phraiz.back.summary.enums.SummaryPrompt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,19 +28,19 @@ public class SummaryService {
     private final MemberRepository memberRepository;
 
     public SummaryResponseDTO oneLineSummary(String memberId, SummaryRequestDTO summaryRequestDTO){
-        return summary(memberId, summaryRequestDTO.getText(), "다음 글을 전체 내용을 하나의 문장으로 간결하게 요약해줘.");
+        return summary(memberId, summaryRequestDTO.getText(), SummaryPrompt.ONE_LINE.getPrompt());
     }
 
     public SummaryResponseDTO fullSummary(String memberId, SummaryRequestDTO summaryRequestDTO){
-        return summary(memberId, summaryRequestDTO.getText(), "다음 글의 전반적인 내용을 여러 문장으로 자연스럽게 요약해줘.");
+        return summary(memberId, summaryRequestDTO.getText(), SummaryPrompt.FULL.getPrompt());
     }
 
     public SummaryResponseDTO paragraphSummary(String memberId, SummaryRequestDTO summaryRequestDTO){
-        return summary(memberId, summaryRequestDTO.getText(), "다음 글의 각 문단의 핵심 내용을 따로따로 요약해줘.");
+        return summary(memberId, summaryRequestDTO.getText(), SummaryPrompt.PARAGRAPH.getPrompt());
     }
 
     public SummaryResponseDTO keyPointSummary(String memberId, SummaryRequestDTO summaryRequestDTO){
-        return summary(memberId, summaryRequestDTO.getText(), "다음 글의 전체 내용을 문단 구분 없이 핵심 문장 리스트 형식으로 요약해줘.");
+        return summary(memberId, summaryRequestDTO.getText(), SummaryPrompt.KEY_POINT.getPrompt());
     }
 
     public SummaryResponseDTO questionBasedSummary(String memberId, SummaryRequestDTO summaryRequestDTO){
@@ -53,7 +50,7 @@ public class SummaryService {
             // Todo. 예외 던지기
         }
         // 프롬프트에 삽입
-        String prompt = String.format("다음 글을 읽고 '%s'에 대해 요약해서 답변해줘.", question);
+        String prompt = String.format(SummaryPrompt.QUESTION_BASED.getPrompt(), question);
         return summary(memberId, summaryRequestDTO.getText(), prompt);
     }
 
@@ -64,7 +61,7 @@ public class SummaryService {
             // Todo. 예외 던지기
         }
         // 프롬프트에 삽입
-        String prompt = String.format("다음 글을 '{target}'에게 설명하듯 요약해줘.", target);
+        String prompt = String.format(SummaryPrompt.TARGETED.getPrompt(), target);
         return summary(memberId, summaryRequestDTO.getText(), prompt);
     }
 
