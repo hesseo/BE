@@ -122,7 +122,17 @@ public class MemberService {
 
         return new SignUpResponseDTO(member.getMemberId(),"회원가입 성공");
     }
-    // 1-2. 이메일 검증 여부 확인
+
+    // 1-2. 아이디중복 확인
+    public boolean checkId(String id){
+        if (memberRepository.existsById(id)) {
+            throw new BusinessLogicException(MemberErrorCode.USERID_EXISTS);
+        }else {
+            return true;
+        }
+    }
+
+    // 1-3. 이메일 검증 여부 확인
     public void checkEmailVerified(String email) {
         String verified=redisUtil.getData("verified:"+email);
         if (!"true".equals(verified)) {

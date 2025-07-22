@@ -1,5 +1,6 @@
-package com.phraiz.back.member.domain;
+package com.phraiz.back.cite.domain;
 
+import com.phraiz.back.member.domain.Member;
 import jakarta.persistence.*;
 import lombok.*;
 

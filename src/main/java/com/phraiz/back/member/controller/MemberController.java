@@ -60,13 +60,23 @@ public class MemberController {
     /* 1. 회원가입 */
     // 1-1. 회원 가입(+아이디,이메일 중복 체크)
     @PostMapping("/signUp")
-    public ResponseEntity<SignUpResponseDTO> signUp(@RequestBody SignUpRequestDTO signUpRequestDTO) {
+    public ResponseEntity<SignUpResponseDTO> signUp(@RequestBody @Valid SignUpRequestDTO signUpRequestDTO) {
         //memberService.checkEmailVerified(signUpRequestDTO.getEmail());
         SignUpResponseDTO signUpResponseDTO = memberService.signUp(signUpRequestDTO);
         return ResponseEntity.ok(signUpResponseDTO);
     }
 
-    // 1-2. 이메일 인증 번호 전송&인증
+    // 1-2. 아이디중복 확인
+    @PostMapping("/checkId")
+    public ResponseEntity<Map<String, Object>> checkId(@RequestBody Map<String, String> request) {
+        String id = request.get("id");
+        boolean result=memberService.checkId(id);
+        Map<String, Object> response = new HashMap<>();
+        response.put("result",result);
+        return ResponseEntity.ok(response);
+    }
+
+    // 1-3. 이메일 인증 번호 전송&인증
     @PostMapping("/emails/mailSend")
     public ResponseEntity<Map<String, Object>> sendEmail(@RequestBody EmailRequestDTO emailRequestDTO) {
         if (emailService.getMemberByEmail(emailRequestDTO.getEmail())){
@@ -86,7 +96,7 @@ public class MemberController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-    // 1-2. 인증코드 확인
+    // 1-3. 인증코드 확인
     @PostMapping("/emails/mailAuthCheck")
     public ResponseEntity<Map<String, Object>> authCheck(@RequestBody @Valid EmailCheckDTO emailCheckDTO) {
         boolean check=emailService.checkAuthNum(emailCheckDTO.getEmail(),emailCheckDTO.getAuthNum());

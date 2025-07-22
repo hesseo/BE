@@ -1,4 +1,4 @@
-package com.phraiz.back.member.service;
+package com.phraiz.back.cite.service;
 
 import de.undercouch.citeproc.CSL;
 import de.undercouch.citeproc.ListItemDataProvider;
@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.util.List;
-
+// TODO 필요없는 클래스??
 @Service
 public class CiteService {
     public String generateCite(String style, JSONObject cslJson){
