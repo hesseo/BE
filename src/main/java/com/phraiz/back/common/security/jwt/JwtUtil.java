@@ -35,7 +35,7 @@ public class JwtUtil {
     }
 
     // access token 생성
-    public String generateToken(String id) {
+    public String generateAccessToken(String id) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpTime);
 

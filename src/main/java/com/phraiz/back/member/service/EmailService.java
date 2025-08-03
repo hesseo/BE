@@ -96,7 +96,8 @@ public class EmailService {
             redisUtil.deleteData(redisKey);
             // 2. 인증 완료 표시
             String verifiedKey = VERIFIED_KEY_PREFIX + email;
-            redisUtil.setDataExpire(verifiedKey, "true", 60*5L);
+            //redisUtil.setDataExpire(verifiedKey, "true", 60*15L); // 인증 완료 후 제한 시간
+            redisUtil.setData(verifiedKey, "true"); // 인증 완료 후 제한 시간x
             return true;
         }else {
             // 인증번호 검사 실패

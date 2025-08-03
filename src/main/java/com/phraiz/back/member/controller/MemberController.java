@@ -73,6 +73,7 @@ public class MemberController {
         boolean result=memberService.checkId(id);
         Map<String, Object> response = new HashMap<>();
         response.put("result",result);
+        response.put("message", "사용 가능한 아이디입니다.");
         return ResponseEntity.ok(response);
     }
 
@@ -83,7 +84,6 @@ public class MemberController {
             throw new BusinessLogicException(MemberErrorCode.DUPLICATE_EMAIL);
         }
         Map<String, Object> response = new HashMap<>();
-        System.out.println("이메일 인증 요청이 들어옴");
         System.out.println("이메일 인증이메일: "+emailRequestDTO.getEmail());
         try {
             emailService.joinEmail(emailRequestDTO.getEmail());
@@ -118,7 +118,7 @@ public class MemberController {
         Member member = memberService.login(loginRequestDTO);
 
         // 토큰 생성
-        String accessToken = jwtUtil.generateToken(member.getId());
+        String accessToken = jwtUtil.generateAccessToken(member.getId());
         String refreshToken = jwtUtil.generateRefreshToken(member.getId());
 
         // refresh token redis에 저장
@@ -174,7 +174,8 @@ public class MemberController {
 
     }
 
-    // 2-3. 이메일 입력 시 이메일로 아이디 전송
+    // 2-3. 아이디 찾기
+    // 등록된 이메일 입력 시 이메일로 아이디 전송
     @PostMapping("/findId")
     public ResponseEntity<Map<String, Object>> findId(@RequestBody Map<String, String> request) {
         String email = request.get("email");
@@ -183,6 +184,31 @@ public class MemberController {
         response.put("success", true);
         response.put("message", "입력하신 이메일로 아이디를 전송했습니다.");
         return ResponseEntity.ok(response);
+    }
+
+    // 2-4. 비밀번호 찾기
+    // 등록된 이메일 입력 시 이메일로 비밀번호 재설정 링크 전송
+    // 임시 토큰 발급 및 이메일 전송
+    @PostMapping("/findPwd")
+    public ResponseEntity<String> findPwd(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> response = new HashMap<>();
+        memberService.findPwd(email);
+        return ResponseEntity.ok("비밀번호 재설정 링크가 이메일로 전송되었습니다.");
+    }
+
+    // 비밀번호 재설정
+    @PostMapping("/resetPwd")
+    public ResponseEntity<String> resetPwd(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPwd = request.get("newPwd");
+
+        if (!newPwd.matches("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+=-]).{8,20}$")) {
+            throw new BusinessLogicException(MemberErrorCode.INVALID_PASSWORD);
+        }
+
+        memberService.resetPwd(token, newPwd);
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
 
 
