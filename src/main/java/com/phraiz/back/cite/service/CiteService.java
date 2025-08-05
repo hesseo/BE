@@ -1,13 +1,19 @@
 package com.phraiz.back.cite.service;
 
 import com.phraiz.back.cite.domain.Cite;
+import com.phraiz.back.cite.domain.CiteFolder;
 import com.phraiz.back.cite.dto.request.CitationRequestDTO;
 import com.phraiz.back.cite.dto.request.RenameRequestDTO;
 import com.phraiz.back.cite.dto.response.CitationResponseDTO;
+import com.phraiz.back.cite.dto.response.FolderResponseDTO;
 import com.phraiz.back.cite.exception.CiteErrorCode;
+import com.phraiz.back.cite.repository.CiteFolderRepository;
 import com.phraiz.back.cite.repository.CiteRepository;
+import com.phraiz.back.common.enums.Plan;
 import com.phraiz.back.common.exception.custom.BusinessLogicException;
+import com.phraiz.back.common.security.user.CustomUserDetails;
 import com.phraiz.back.member.domain.Member;
+import com.phraiz.back.member.exception.MemberErrorCode;
 import de.undercouch.citeproc.CSL;
 import de.undercouch.citeproc.ListItemDataProvider;
 import de.undercouch.citeproc.csl.CSLItemData;
@@ -18,18 +24,22 @@ import de.undercouch.citeproc.output.Citation;
 import lombok.RequiredArgsConstructor;
 import net.minidev.json.JSONObject;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class CiteService {
     private final CiteRepository citeRepository;
+    private final CiteFolderRepository citeFolderRepository;
 
     // 0. 소유권 체크(본인만 수정)
     public void checkCiteOwnership(Long memberId, Long citeOwnerId){
@@ -62,23 +72,43 @@ public class CiteService {
         cite.setStyle(citationRequestDTO.getStyle());
     }
 
+    // 1-3. 인용문 조회
+    public CitationResponseDTO getCiteDetail(Member member, Long citeId) {
+        Cite cite = citeRepository.findById(citeId)
+                .orElseThrow(() -> new BusinessLogicException(CiteErrorCode.CITE_NOT_FOUND));
+
+        // 소유권 체크 (본인만 조회 가능)
+        checkCiteOwnership(member.getMemberId(), cite.getMember().getMemberId());
+
+        // 엔티티 → DTO 변환
+        return CitationResponseDTO.builder()
+                .citeId(cite.getCiteId())
+                .title(cite.getTitle())
+                .style(cite.getStyle())
+                .citation(cite.getCitation())
+                .url(cite.getUrl())
+                .createdAt(cite.getCreatedAt())
+                .build();
+
+    }
+
     // 2. 히스토리
     // 2-1. 사용자별 저장된 인용문 리스트 가져오기
-    public List<CitationResponseDTO> getMyCitations(Member member) {
+    public List<Map<String, Object>> getMyCitations(Member member) {
         List<Cite> list=citeRepository.findAllByMemberOrderByCreatedAtDesc(member);
         return list.stream()
-                .map(cite -> CitationResponseDTO.builder()
-                        .citeId(cite.getCiteId())
-                        .title(cite.getTitle())
-                        .style(cite.getStyle())
-                        .citation(cite.getCitation())
-                        .url(cite.getUrl())
-                        .createdAt(cite.getCreatedAt())
-                        .build())
+                .map(cite -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("citeId", cite.getCiteId());
+                    map.put("title", cite.getTitle());
+                    map.put("createdAt", cite.getCreatedAt());
+                    return map;
+                })
                 .toList();
     }
 
     // 2-2. 파일 이름 변경
+    @Transactional
     public void renameCiteFile(RenameRequestDTO renameRequestDTO, Member member) {
         Cite cite = citeRepository.findById(renameRequestDTO.getCiteId())
                 .orElseThrow(() -> new BusinessLogicException(CiteErrorCode.CITE_NOT_FOUND));
@@ -87,66 +117,71 @@ public class CiteService {
         checkCiteOwnership(member.getMemberId(), cite.getMember().getMemberId());
 
         cite.setTitle(renameRequestDTO.getNewTitle()); // 새로운 제목으로 파일 이름 수정
+        // jpa 자동 반영되므로 굳이 .save 할 필요 없음
 
     }
 
     // 2-3. 파일 삭제
-    public boolean deleteCiteFile(Long citeId, Member member) {
+    @Transactional
+    public void deleteCiteFile(Long citeId, Member member) {
         Cite cite=citeRepository.findById(citeId).orElseThrow(() -> new BusinessLogicException(CiteErrorCode.CITE_NOT_FOUND));
         // 소유권 체크 (본인만 삭제 가능)
         checkCiteOwnership(member.getMemberId(), cite.getMember().getMemberId());
         // 삭제
         citeRepository.deleteById(citeId);
-        return !citeRepository.existsById(citeId);
     }
 
-    // 인용문 생성
-//    public String generateCite(String style, JSONObject cslJson){
-//        try {
-//            // jsonObject 를 cslItemData 로 변환
-//            // JSONObject를 CSLItemData로 변환
-//            CSLItemData itemData = jsonToCSLItemData(cslJson);
-//
-//            // ListItemDataProvider 사용 (이미 구현된 클래스)
-//            ListItemDataProvider provider = new ListItemDataProvider(itemData);
-//
-//            String styleContent = loadStyleContent(style);
-//            CSL csl = new CSL(provider, styleContent);
-//
-//            List<Citation> citations = csl.makeCitation(cslJson.getAsString("id"));
-//            Citation citation = citations.get(0);
-//
-//            return citation.getText();
-//        } catch (IOException e) {
-//            throw new RuntimeException("인용문 생성 실패",e);
-//        }
-//
-//    }
+    // 폴더 생성은 Basic 부터
+    // 3. 폴더
+    // 3-1. 폴더 생성
+    public CiteFolder createCiteFolder(Member member, String folderName) {
+        Plan userPlan = Plan.fromId(member.getPlanId());
 
-    private String loadStyleContent(String style) {
-        try {
-            // 리소스 폴더에서 로드
-            ClassPathResource resource = new ClassPathResource("csl-styles/" + style + ".csl");
-            return Files.readString(resource.getFile().toPath());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (userPlan.equals(Plan.FREE)) {
+            throw new BusinessLogicException(MemberErrorCode.PLAN_NOT_ENOUGH);
         }
+
+        // 폴더 생성
+        CiteFolder citeFolder = new CiteFolder();
+        citeFolder.setName(folderName);
+        citeFolder.setMember(member);
+
+        return citeFolderRepository.save(citeFolder);
+
     }
+    // 3-2. 폴더에 파일 저장
+    // 3-3. 사용자별 저장된 폴더 조회
+    public List<FolderResponseDTO> getMyFolders(Member member) {
+        List<CiteFolder> list=citeFolderRepository.findAllByMemberOrderByCreatedAtDesc(member);
+        return list.stream()
+                .map(citeFolder -> FolderResponseDTO.builder()
+                        .folderId(citeFolder.getFolderId())
+                        .folderName(citeFolder.getName())
+                        .createdAt(citeFolder.getCreatedAt())
+                        .build())
+                .toList();
+    }
+    // 3-4. 사용자별 폴더 속 아이템 조회
+    public List<Map<String, Object>> getMyFolderItems(Long folderId, Member member) {
+        CiteFolder folder = citeFolderRepository.findById(folderId)
+                .orElseThrow(() -> new BusinessLogicException(CiteErrorCode.FOLDER_NOT_FOUND));
+
+        // 소유권 체크 (본인만 조회 가능)
+        checkCiteOwnership(member.getMemberId(), folder.getMember().getMemberId());
+
+        return folder.getFiles().stream()
+                .map(item->{
+                    Cite cite = item.getCite();
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("citeId", cite.getCiteId());
+                    map.put("title", cite.getTitle());
+                    map.put("createdAt", cite.getCreatedAt());
+                    return map;
+                }).toList();
+
+    }
+        // 3-5. 아이템 이동
 
 
-    private CSLItemData jsonToCSLItemData(JSONObject cslJson) {
-        try {
-            // jsonObject->String
-            String jsonString = cslJson.toString();
-            // String->Reader
-            StringReader sr = new StringReader(jsonString);
-            JsonLexer lexer = new JsonLexer(sr);
-            JsonParser parser = new JsonParser(lexer);
 
-            return CSLItemData.fromJson(parser.parseObject());
-
-        } catch (Exception e) {
-            throw new RuntimeException("CSLItemData 변환 실패", e);
-        }
-        }
 }

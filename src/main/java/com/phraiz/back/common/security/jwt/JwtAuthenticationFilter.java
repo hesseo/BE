@@ -46,6 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication); // 현재 요청에 대해 "인증된 사용자" 로 등록
 
         }
+
         filterChain.doFilter(request, response);
 
     }

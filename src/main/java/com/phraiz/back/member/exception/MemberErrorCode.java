@@ -37,7 +37,11 @@ public enum MemberErrorCode implements ErrorCode {
     INVALID_REFRESH_TOKEN(401, "SEC004", "유효하지 않은 Refresh Token입니다.", "ACCOUNT"),
 
     // 07. 비밀번호 재설정 토큰 발급 관련
-    INVALID_PASSWORD_RESET_TOKEN(401, "SEC005", "비밀번호 재설정 토큰이 유효하지 않거나 만료되었습니다.", "ACCOUNT");
+    INVALID_PASSWORD_RESET_TOKEN(401, "SEC005", "비밀번호 재설정 토큰이 유효하지 않거나 만료되었습니다.", "ACCOUNT"),
+
+    // 08. 요금제 관련
+    PLAN_NOT_ENOUGH(403, "PLAN001", "BASIC 플랜 이상에서만 폴더 기능을 사용할 수 있습니다.", "PLAN");
+
 
     ;
 

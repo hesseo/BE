@@ -1,5 +1,7 @@
 package com.phraiz.back.common.exception.handler;
 
+import com.phraiz.back.common.exception.custom.RefreshTokenExpiredException;
+import com.phraiz.back.common.exception.custom.TokenExpiredException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -38,15 +40,44 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    // 2. 나머지 모든 예외 (catch-all)
+    // 2. access 토큰 만료
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", 401);
+        error.put("code", "AUTH_EXPIRED");
+        error.put("message", ex.getMessage());
+        error.put("service", "AUTH");
+        error.put("path", request.getRequestURI());
+        error.put("timestamp", LocalDateTime.now());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // 3. refresh 토큰 만료
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<Map<String, Object>> handleRefreshTokenExpired(RefreshTokenExpiredException ex, HttpServletRequest request) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", 403);
+        error.put("code", "REFRESH_EXPIRED");
+        error.put("message", ex.getMessage());
+        error.put("service", "AUTH");
+        error.put("path", request.getRequestURI());
+        error.put("timestamp", LocalDateTime.now());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+
+    // 4. 나머지 모든 예외 (catch-all)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
+    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, HttpServletRequest request) {
         Map<String, Object> error = new HashMap<>();
         error.put("status", 500);
         error.put("code", "SYS000");
         error.put("message", "서버 내부 오류가 발생했습니다.");
         error.put("service", "GLOBAL");
-        error.put("path", "/api/members/signUp"); // 또는 request에서 동적으로 추출 가능
+        error.put("path", request.getRequestURI()); // 또는 request에서 동적으로 추출 가능
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
