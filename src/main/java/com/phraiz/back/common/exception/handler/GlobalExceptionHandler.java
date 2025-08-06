@@ -1,7 +1,10 @@
 package com.phraiz.back.common.exception.handler;
 
+import com.phraiz.back.common.exception.custom.BusinessLogicException;
+import com.phraiz.back.common.exception.custom.InvalidRefreshTokenException;
 import com.phraiz.back.common.exception.custom.RefreshTokenExpiredException;
-import com.phraiz.back.common.exception.custom.TokenExpiredException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,21 +43,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    // 2. access 토큰 만료
-    @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<Map<String, Object>> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("status", 401);
-        error.put("code", "AUTH_EXPIRED");
-        error.put("message", ex.getMessage());
-        error.put("service", "AUTH");
-        error.put("path", request.getRequestURI());
-        error.put("timestamp", LocalDateTime.now());
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-    }
-
-    // 3. refresh 토큰 만료
+    // 2. refresh 토큰 만료
     @ExceptionHandler(RefreshTokenExpiredException.class)
     public ResponseEntity<Map<String, Object>> handleRefreshTokenExpired(RefreshTokenExpiredException ex, HttpServletRequest request) {
         Map<String, Object> error = new HashMap<>();
@@ -68,8 +57,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    // 3. 유효하지 않다고 판단된 토큰
+    @ExceptionHandler({InvalidRefreshTokenException.class})
+    public ResponseEntity<Map<String, Object>> handleRefreshTokenErrors(InvalidRefreshTokenException ex, HttpServletRequest request) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", 401);
+        error.put("code", "INVALID_REFRESH_TOKEN");
+        error.put("message", ex.getMessage());
+        error.put("path", request.getRequestURI());
+        error.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
 
-    // 4. 나머지 모든 예외 (catch-all)
+    // 4. 라이브러리에서 발생하는 JWT 관련 예외 처리
+    @ExceptionHandler({SignatureException.class, JwtException.class})
+    public ResponseEntity<Map<String, Object>> handleJwtExceptions(Exception ex, HttpServletRequest request) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("status", 401);
+        error.put("code", "INVALID_TOKEN");
+        error.put("message", ex.getMessage() != null ? ex.getMessage() : "Invalid JWT token.");
+        error.put("path", request.getRequestURI());
+        error.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // 5. 나머지 모든 예외 (catch-all)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex, HttpServletRequest request) {
         Map<String, Object> error = new HashMap<>();

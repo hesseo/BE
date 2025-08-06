@@ -69,12 +69,11 @@ public class JwtUtil {
 
     // 유효성 체크(만료 여부 등)
     public boolean validateToken(String token) {
-        try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-            return true;
-        }catch (JwtException e) {
-            return false;
-        }
+        Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token); // 여기서 유효하지 않으면 예외 발생
+        return true;
     }
 
 }

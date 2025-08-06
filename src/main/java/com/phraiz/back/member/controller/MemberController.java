@@ -190,16 +190,18 @@ public class MemberController {
     // 등록된 이메일 입력 시 이메일로 비밀번호 재설정 링크 전송
     // 임시 토큰 발급 및 이메일 전송
     @PostMapping("/findPwd")
-    public ResponseEntity<String> findPwd(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> findPwd(@RequestBody Map<String, String> request) {
         String email = request.get("email");
         Map<String, Object> response = new HashMap<>();
         memberService.findPwd(email);
-        return ResponseEntity.ok("비밀번호 재설정 링크가 이메일로 전송되었습니다.");
+        response.put("success", true);
+        response.put("message", "비밀번호 재설정 링크가 이메일로 전송되었습니다.");
+        return ResponseEntity.ok(response);
     }
 
     // 비밀번호 재설정
     @PostMapping("/resetPwd")
-    public ResponseEntity<String> resetPwd(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> resetPwd(@RequestBody Map<String, String> request) {
         String token = request.get("token");
         String newPwd = request.get("newPwd");
 
@@ -208,7 +210,10 @@ public class MemberController {
         }
 
         memberService.resetPwd(token, newPwd);
-        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "비밀번호가 성공적으로 변경되었습니다.");
+        return ResponseEntity.ok(response);
     }
 
 

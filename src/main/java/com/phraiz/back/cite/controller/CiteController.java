@@ -48,7 +48,7 @@ public class CiteController {
         Long citeId=citeService.saveCslJson(csl,url,member);
 
         response.put("csl", cslJson);
-        response.put("cite_id",citeId);
+        response.put("citeId",citeId);
 
         return ResponseEntity.ok(response);
     }

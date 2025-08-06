@@ -1,6 +1,8 @@
 package com.phraiz.back.member.service;
 
 import com.phraiz.back.common.exception.custom.BusinessLogicException;
+import com.phraiz.back.common.exception.custom.InvalidRefreshTokenException;
+import com.phraiz.back.common.exception.custom.RefreshTokenExpiredException;
 import com.phraiz.back.common.security.jwt.JwtUtil;
 import com.phraiz.back.common.util.RedisUtil;
 import com.phraiz.back.member.domain.Member;
@@ -18,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -43,8 +46,13 @@ public class MemberService {
     // token 재발급-RTR 방식으로
     public LoginResponseDTO reissueToken(String refreshToken) {
         // refresh token 유효성 검사
-        if (!jwtUtil.validateToken(refreshToken)) {
-            throw new BusinessLogicException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+//        if (!jwtUtil.validateToken(refreshToken)) {
+//            throw new BusinessLogicException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+//        }
+        try {
+            jwtUtil.validateToken(refreshToken);
+        } catch (JwtException e) {
+            throw new InvalidRefreshTokenException("유효하지 않은 리프레시 토큰입니다.");
         }
 
         String id=jwtUtil.getSubjectFromToken(refreshToken); // 사용자의 고유 아이디
@@ -52,8 +60,8 @@ public class MemberService {
         // redis 에 저장된 refresh 토큰과 일치확인
         String storedRefreshToken=redisTemplate.opsForValue().get("RT:"+id);
 
-        if (storedRefreshToken==null || !storedRefreshToken.equals(refreshToken)) {
-            throw new IllegalArgumentException("저장된 refresh token과 일치하지 않습니다.");
+        if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
+            throw new InvalidRefreshTokenException("저장된 refresh token과 일치하지 않습니다.");
         }
         // 새로운 access token 발급
         String newAccessToken = jwtUtil.generateAccessToken(id);
@@ -201,7 +209,9 @@ public class MemberService {
         redisTemplate.opsForValue().set("PWD_RESET:" + token, member.getId(), 30, TimeUnit.MINUTES);
 
         // 3. 이메일 링크 생성
-        String resetLink = "https://ssu-phraiz-fe.vercel.app/resetPwd?token=" + token;
+        // String resetLink = "https://ssu-phraiz-fe.vercel.app/resetPwd?token=" + token;
+        // TODO 링크 변경
+        String resetLink = "http://localhost:3000?token=" + token;
 
         String title = "비밀번호 재설정 안내";
         String content =
