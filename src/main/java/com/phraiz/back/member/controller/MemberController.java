@@ -199,6 +199,21 @@ public class MemberController {
         return ResponseEntity.ok(response);
     }
 
+    // 비밀번호 재설정 유효성 검사
+    @GetMapping("/verifyResetToken")
+    public ResponseEntity<Map<String, Object>> verifyResetToken(@RequestParam String token) {
+        boolean isValid = memberService.verifyResetToken(token);
+        Map<String, Object> response = new HashMap<>();
+        if (isValid) {
+            response.put("success", true);
+            response.put("message", "유효한 토큰입니다.");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "토큰이 유효하지 않거나 만료되었습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
     // 비밀번호 재설정
     @PostMapping("/resetPwd")
     public ResponseEntity<Map<String, Object>> resetPwd(@RequestBody Map<String, String> request) {

@@ -209,7 +209,7 @@ public class MemberService {
         redisTemplate.opsForValue().set("PWD_RESET:" + token, member.getId(), 30, TimeUnit.MINUTES);
 
         // 3. 이메일 링크 생성
-        // String resetLink = "https://ssu-phraiz-fe.vercel.app/resetPwd?token=" + token;
+        // String resetLink = "https://ssu-phraiz-fe.vercel.app/reset-pw?token=" + token;
         // TODO 링크 변경
         String resetLink = "http://localhost:3000?token=" + token;
 
@@ -233,16 +233,31 @@ public class MemberService {
 
     }
 
-    // 비밀번호 재설정
-    public void resetPwd(String token, String newPwd){
+    // 비밀번호 재설정 유효성 검사
+    public boolean verifyResetToken(String token) {
         // 1. Redis에서 토큰 조회
-        String memberId = redisTemplate.opsForValue().get("PWD_RESET:" + token);
-        if (memberId == null) {
+        String resetId = redisTemplate.opsForValue().get("PWD_RESET:" + token);
+        if (resetId == null) {
             throw new BusinessLogicException(MemberErrorCode.INVALID_PASSWORD_RESET_TOKEN);
         }
 
         // 2. 사용자 조회
-        Member member = memberRepository.findById(memberId)
+        memberRepository.findById(resetId)
+                .orElseThrow(() -> new BusinessLogicException(MemberErrorCode.USER_NOT_FOUND));
+
+        return true;
+    }
+
+    // 비밀번호 재설정
+    public void resetPwd(String token, String newPwd){
+        // 1. Redis에서 토큰 조회
+        String resetId = redisTemplate.opsForValue().get("PWD_RESET:" + token);
+        if (resetId == null) {
+            throw new BusinessLogicException(MemberErrorCode.INVALID_PASSWORD_RESET_TOKEN);
+        }
+
+        // 2. 사용자 조회
+        Member member = memberRepository.findById(resetId)
                 .orElseThrow(() -> new BusinessLogicException(MemberErrorCode.USER_NOT_FOUND));
 
         // 3. 비밀번호 암호화 및 저장

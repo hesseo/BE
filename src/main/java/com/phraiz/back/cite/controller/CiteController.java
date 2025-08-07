@@ -40,9 +40,11 @@ public class CiteController {
 
         // 1. URL 을 Zotero Translation Server 에 보내서 논문 등의 메타데이터를 가져옴
         ZoteroItem item = citeTranslationService.translateFromUrl(url);
+
         // 2. cslJson 으로 변환
         JSONObject cslJson=citeConvertService.toCSL(item);
         String csl=cslJson.toString();
+
         // 3. cslJson & url 저장
         // 응답으로 식별자도 리턴
         Long citeId=citeService.saveCslJson(csl,url,member);
