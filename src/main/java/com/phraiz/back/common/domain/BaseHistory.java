@@ -38,8 +38,7 @@ public abstract class BaseHistory{
     @Column(name = "last_update", nullable = false)
     private LocalDateTime lastUpdate; // 6. 최종 수정 시각
 
-    /* 생성·수정 시 lastUpdate 자동 갱신 */
-    @PrePersist
+    /* 수정 시 lastUpdate 자동 갱신 */
     @PreUpdate
     protected void onUpdate() {
         this.lastUpdate = LocalDateTime.now();
@@ -49,6 +48,7 @@ public abstract class BaseHistory{
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.lastUpdate = LocalDateTime.now();
     }
 
 
