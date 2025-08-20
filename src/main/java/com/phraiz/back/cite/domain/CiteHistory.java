@@ -3,6 +3,7 @@ package com.phraiz.back.cite.domain;
 import com.phraiz.back.common.domain.BaseHistory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -10,6 +11,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "cite_history")
 @SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class CiteHistory extends BaseHistory {
 
     // citeId 대신 Cite 엔티티 자체를 필드로 선언

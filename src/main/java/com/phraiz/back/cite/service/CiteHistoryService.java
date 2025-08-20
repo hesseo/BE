@@ -2,9 +2,11 @@ package com.phraiz.back.cite.service;
 
 import com.phraiz.back.cite.domain.Cite;
 import com.phraiz.back.cite.domain.CiteHistory;
+import com.phraiz.back.cite.dto.response.CitationHistoryContentResponseDTO;
 import com.phraiz.back.cite.exception.CiteErrorCode;
 import com.phraiz.back.cite.repository.CiteRepository;
 import com.phraiz.back.common.dto.response.HistoriesResponseDTO;
+import com.phraiz.back.common.dto.response.HistoryContentResponseDTO;
 import com.phraiz.back.common.dto.response.HistoryMetaDTO;
 import com.phraiz.back.common.enums.Plan;
 import com.phraiz.back.common.exception.custom.BusinessLogicException;
@@ -123,6 +125,25 @@ public class CiteHistoryService extends AbstractHistoryService<CiteHistory> {
 
         repo.save(newHistory);
         new HistoryMetaDTO(newHistory.getId(), newHistory.getName());
+
+    }
+
+    public CitationHistoryContentResponseDTO readCitationHistoryContent(String memberId, Long id) {
+        // 1. 부모 클래스처럼 히스토리 엔티티를 찾습니다.
+        CiteHistory history = repo.findByIdAndMemberId(id, memberId)
+                .orElseThrow(() -> new EntityNotFoundException("히스토리를 찾을 수 없습니다."));
+
+        // 2. CiteHistory 엔티티에서 cite 객체에 접근하여 citeId를 가져옵니다.
+        // getCite()는 JPA 연관관계 매핑을 통해 Cite 엔티티를 반환합니다.
+        Long citeId = history.getCite().getCiteId();
+
+        // 3. 빌더에 citeId를 추가하여 DTO를 반환합니다.
+        return CitationHistoryContentResponseDTO.builder()
+                .id(history.getId())
+                .content(history.getContent())
+                .lastUpdate(history.getLastUpdate())
+                .citeId(citeId) // ⭐ citeId를 추가
+                .build();
     }
 
 }

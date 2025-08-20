@@ -4,6 +4,7 @@ import com.phraiz.back.cite.domain.CiteFolder;
 import com.phraiz.back.cite.dto.request.CitationRequestDTO;
 import com.phraiz.back.cite.dto.request.CitationUpdateRequestDTO;
 import com.phraiz.back.cite.dto.request.RenameRequestDTO;
+import com.phraiz.back.cite.dto.response.CitationHistoryContentResponseDTO;
 import com.phraiz.back.cite.dto.response.CitationResponseDTO;
 import com.phraiz.back.cite.dto.response.FolderResponseDTO;
 import com.phraiz.back.cite.dto.response.ZoteroItem;
@@ -249,9 +250,9 @@ public class CiteController {
 
     // 3-5. 히스토리 최신 내용 조회
     @GetMapping("/histories/{historyId}/latest")
-    public HistoryContentResponseDTO getHistoryContent(@PathVariable Long historyId) {
+    public CitationHistoryContentResponseDTO getHistoryContent(@PathVariable Long historyId) {
         String memberId = SecurityUtil.getCurrentMemberId();
-        return citeHistoryService.readHistoryContent(memberId, historyId);
+        return citeHistoryService.readCitationHistoryContent(memberId, historyId);
     }
 
 
