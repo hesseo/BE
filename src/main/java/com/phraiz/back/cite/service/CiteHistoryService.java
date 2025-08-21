@@ -6,7 +6,6 @@ import com.phraiz.back.cite.dto.response.CitationHistoryContentResponseDTO;
 import com.phraiz.back.cite.exception.CiteErrorCode;
 import com.phraiz.back.cite.repository.CiteRepository;
 import com.phraiz.back.common.dto.response.HistoriesResponseDTO;
-import com.phraiz.back.common.dto.response.HistoryContentResponseDTO;
 import com.phraiz.back.common.dto.response.HistoryMetaDTO;
 import com.phraiz.back.common.enums.Plan;
 import com.phraiz.back.common.exception.custom.BusinessLogicException;
@@ -137,7 +136,7 @@ public class CiteHistoryService extends AbstractHistoryService<CiteHistory> {
         // getCite()는 JPA 연관관계 매핑을 통해 Cite 엔티티를 반환합니다.
         Long citeId = history.getCite().getCiteId();
 
-        // 3. 빌더에 citeId를 추가하여 DTO를 반환합니다.
+        // 3. 빌더에 citeId를 추가하여 DTO 를 반환합니다.
         return CitationHistoryContentResponseDTO.builder()
                 .id(history.getId())
                 .content(history.getContent())
