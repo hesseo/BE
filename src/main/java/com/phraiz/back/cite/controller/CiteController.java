@@ -3,7 +3,9 @@ package com.phraiz.back.cite.controller;
 import com.phraiz.back.cite.dto.request.CitationRequestDTO;
 import com.phraiz.back.cite.dto.response.CitationHistoryContentResponseDTO;
 import com.phraiz.back.cite.dto.response.CitationResponseDTO;
+import com.phraiz.back.cite.dto.response.Creator;
 import com.phraiz.back.cite.dto.response.ZoteroItem;
+import com.phraiz.back.cite.parser.DbpiaAuthorParser;
 import com.phraiz.back.cite.service.*;
 import com.phraiz.back.common.dto.request.HistoryUpdateDTO;
 import com.phraiz.back.common.dto.request.UpdateRequestDTO;
@@ -21,6 +23,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -50,6 +53,14 @@ public class CiteController {
         ZoteroItem item = citeTranslationService.translateFromUrl(url);
         log.info("[getUrlData] Zotero Translation Server 응답 완료: item_title={}", item.getTitle());
 
+        // author null 확인
+        if (item.getCreators() == null || item.getCreators().isEmpty() ||
+                (item.getCreators().get(0).getLastName() == null && item.getCreators().get(0).getFirstName() == null)) {
+            log.info("[getUrlData] metadata author==null");
+            List< Creator> creators = DbpiaAuthorParser.getAuthor(url);
+            item.setCreators(creators);
+            System.out.println("creators=="+creators);
+        }
         // 2. cslJson 으로 변환
         log.info("[getUrlData] CSL 변환 시작");
         JSONObject cslJson=citeConvertService.toCSL(item);
