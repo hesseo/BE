@@ -80,11 +80,11 @@ public class CiteController {
 
         // 3. cslJson & url 저장
         // 응답으로 식별자도 리턴
-        //Long citeId=citeService.saveCslJson(csl,url,member);
-        //log.info("[getUrlData] DB 저장 완료: citeId={}", citeId);
+        Long citeId=citeService.saveCslJson(csl,url,member);
+        log.info("[getUrlData] DB 저장 완료: citeId={}", citeId);
 
         response.put("csl", cslJson);
-//        response.put("citeId",citeId);
+        response.put("citeId",citeId);
 
         return ResponseEntity.ok(response);
     }
